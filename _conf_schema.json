@@ -1,0 +1,94 @@
+{
+    "vector_db_type": {
+        "description": "选择向量数据库类型",
+        "type": "string",
+        "default": "faiss",
+        "options": [
+            "faiss",
+            "milvus_lite",
+            "milvus"
+        ]
+    },
+    "embedding_api_url": {
+        "description": "OpenAI 兼容的 Embedding API 地址 ",
+        "type": "string",
+        "default": "https://api.openai.com/v1",
+        "hint": "(例如: https://api.openai.com/v1)"
+    },
+    "embedding_api_key": {
+        "description": "Embedding API 密钥",
+        "type": "string",
+        "default": "sk-your-key"
+    },
+    "embedding_model_name": {
+        "description": "Embedding 模型名称",
+        "type": "string",
+        "default": "text-embedding-v3"
+    },
+    "embedding_dimension": {
+        "description": "Embedding 向量维度",
+        "type": "int",
+        "default": 1024
+    },
+    "default_collection_name": {
+        "description": "默认知识库集合名称",
+        "type": "string",
+        "default": "general"
+    },
+    "milvus_host": {
+        "description": "Milvus 服务主机",
+        "type": "string",
+        "default": "localhost",
+        "hint": " (仅当 vector_db_type 为 'milvus' 时有效)"
+    },
+    "milvus_port": {
+        "description": "Milvus 服务端口",
+        "type": "string",
+        "default": "19530",
+        "hint": "(仅当 vector_db_type 为 'milvus' 时有效)"
+    },
+    "milvus_user": {
+        "description": "Milvus 用户名",
+        "type": "string",
+        "default": "",
+        "hint": "(可选, 仅当 vector_db_type 为 'milvus' 时有效)"
+    },
+    "milvus_password": {
+        "description": "Milvus 密码",
+        "type": "string",
+        "default": "",
+        "hint": "(可选, 仅当 vector_db_type 为 'milvus' 时有效)"
+    },
+    "faiss_db_subpath": {
+        "description": "Faiss 索引存储子路径 ",
+        "type": "string",
+        "default": "faiss_data",
+        "hint": "(相对于持久化数据目录 'AstrBot/data/plugins_data/astrbot_plugin_knowledge_base/', 仅当 vector_db_type 为 'faiss' 时有效)"
+    },
+    "milvus_lite_db_subpath": {
+        "description": "Milvus Lite 数据文件子路径 ",
+        "type": "string",
+        "default": "milvus_lite_data/milvus_lite.db",
+        "hint": "(相对于持久化数据目录 'AstrBot/data/plugins_data/astrbot_plugin_knowledge_base/', 仅当 vector_db_type 为 'milvus_lite' 时有效)"
+    },
+    "text_chunk_size": {
+        "description": "文本分块大小 (字符数)",
+        "type": "int",
+        "default": 1000
+    },
+    "text_chunk_overlap": {
+        "description": "文本分块重叠大小 (字符数)",
+        "type": "int",
+        "default": 100
+    },
+    "search_top_k": {
+        "description": "搜索时默认返回的结果数量",
+        "type": "int",
+        "default": 3
+    },
+    "auto_create_collection": {
+        "description": "当指定的知识库集合不存在时，是否自动创建",
+        "type": "bool",
+        "default": true
+    }
+}
