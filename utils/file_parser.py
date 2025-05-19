@@ -1,10 +1,9 @@
 from typing import Optional
 from astrbot.api import logger
 import os
+import aiofiles
 
-# 简单文件解析器，目前只支持 txt 和 md
-# TODO: 增加对 PDF, DOCX 等格式的支持 (需要额外库如 pypdf2, python-docx)
-
+# TODO 增加更多的文件类型支持
 
 async def parse_file_content(file_path: str) -> Optional[str]:
     """
@@ -22,7 +21,7 @@ async def parse_file_content(file_path: str) -> Optional[str]:
             logger.warning(f"不支持的文件类型: {extension}，文件路径: {file_path}")
             return None
 
-        async with open(file_path, "r", encoding="utf-8") as f:
+        async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
             content = await f.read()
         return content
     except FileNotFoundError:
