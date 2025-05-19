@@ -38,7 +38,7 @@ class KnowledgeBasePlugin(Star):
         super().__init__(context)
         self.config = config
         self.vector_db: Optional[VectorDBBase] = None
-        self.embedding_util: Optional[EmbeddingUtil] = None
+        self.embedding_util: Optional[EmbeddingUtil,Star] = None
         self.text_splitter: Optional[TextSplitterUtil] = None
 
         self.plugin_name_for_path = PLUGIN_REGISTER_NAME  # 用于路径创建
@@ -99,12 +99,22 @@ class KnowledgeBasePlugin(Star):
     async def _initialize_components(self):
         try:
             logger.info("知识库插件开始初始化...")
-
-            self.embedding_util = EmbeddingUtil(
-                api_url=self.config.get("embedding_api_url"),
-                api_key=self.config.get("embedding_api_key"),
-                model_name=self.config.get("embedding_model_name"),
-            )
+            try:
+                self.embedding_util = self.context.get_registered_star("astrbot_plugin_embedding_adapter").star_cls
+                dim=self.embedding_util.get_dim()
+                model_name=self.embedding_util.get_model_name()
+                if dim is not None and model_name is not None:
+                    self.config["embedding_dimension"] = dim
+                    self.config["embedding_model_name"] = model_name
+            except Exception as e:
+                logger.warning(f"嵌入服务适配器插件加载失败: {e}", exc_info=True)
+                self.embedding_util = None
+            if self.embedding_util is None:
+                self.embedding_util = EmbeddingUtil(
+                    api_url=self.config.get("embedding_api_url"),
+                    api_key=self.config.get("embedding_api_key"),
+                    model_name=self.config.get("embedding_model_name"),
+                )
             logger.info("Embedding 工具初始化完成。")
 
             self.text_splitter = TextSplitterUtil(
@@ -1041,7 +1051,7 @@ class KnowledgeBasePlugin(Star):
             except Exception as e:
                 logger.error(f"等待初始化任务完成时出错: {e}")
 
-        if self.embedding_util:
+        if self.embedding_util and not isinstance(self.embedding_util, Star):
             await self.embedding_util.close()
             logger.info("Embedding 工具已关闭。")
         if self.vector_db:

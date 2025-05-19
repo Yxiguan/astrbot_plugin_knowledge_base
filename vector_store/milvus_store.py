@@ -506,7 +506,7 @@ class MilvusStore(VectorDBBase):
         embeddings_list = []
         if texts_to_embed:
             try:
-                embeddings_list = await self.embedding_util.get_embeddings(
+                embeddings_list = await self.embedding_util.get_embeddings_async(
                     texts_to_embed
                 )
             except Exception as e_embed:
@@ -619,7 +619,7 @@ class MilvusStore(VectorDBBase):
             )
             return []
 
-        query_embedding = await self.embedding_util.get_embedding(query_text)
+        query_embedding = await self.embedding_util.get_embedding_async(query_text)
         if query_embedding is None:
             logger.error("无法为查询文本生成 embedding。")
             return []

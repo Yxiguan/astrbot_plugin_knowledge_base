@@ -27,7 +27,7 @@ class EmbeddingUtil:
             timeout=30.0,
         )
 
-    async def get_embedding(self, text: str) -> Optional[List[float]]:
+    async def get_embedding_async(self, text: str) -> Optional[List[float]]:
         """获取单个文本的 embedding"""
         if not text or not text.strip():
             logger.warning("输入文本为空或仅包含空白，无法获取 embedding。")
@@ -69,7 +69,7 @@ class EmbeddingUtil:
             logger.error(f"获取 Embedding 时发生未知错误: {e}", exc_info=True)
             return None
 
-    async def get_embeddings(self, texts: List[str]) -> List[Optional[List[float]]]:
+    async def get_embeddings_async(self, texts: List[str]) -> List[Optional[List[float]]]:
         """获取多个文本的 embedding (使用 OpenAI 批量接口)，每 10 条文本分批请求"""
         if not texts:
             logger.info("输入文本列表为空，返回空 embedding 列表。")
