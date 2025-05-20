@@ -14,6 +14,7 @@ from astrbot.core.utils.session_waiter import (
     SessionController,
 )
 from astrbot.api.provider import ProviderRequest
+from astrbot.api.star import StarTools
 
 from .utils.embedding import EmbeddingUtil
 from .utils.text_splitter import TextSplitterUtil
@@ -44,7 +45,7 @@ class KnowledgeBasePlugin(Star):
         self.plugin_name_for_path = PLUGIN_REGISTER_NAME  # 用于路径创建
 
         # --- 持久化数据路径计算 ---
-        self.persistent_data_root_path = self._get_persistent_data_path()
+        self.persistent_data_root_path = StarTools.get_data_dir(PLUGIN_REGISTER_NAME)
         os.makedirs(self.persistent_data_root_path, exist_ok=True)
         logger.info(f"知识库插件的持久化数据目录: {self.persistent_data_root_path}")
 
