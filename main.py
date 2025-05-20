@@ -688,8 +688,8 @@ class KnowledgeBasePlugin(Star):
 
         for file_path, original_filename, is_temp_file in files_to_process_info:
             files_processed_count += 1
-            yield event.plain_result(f"正在处理第 {files_processed_count}/{len(files_to_process_info)} 个文件: '{original_filename}'...")
-            
+            # yield event.plain_result(f"正在处理第 {files_processed_count}/{len(files_to_process_info)} 个文件: '{original_filename}'...")
+            logger.debug(f"正在处理第 {files_processed_count}/{len(files_to_process_info)} 个文件: '{original_filename}'...")
             content = await parse_file_content(file_path)
             if content is None:
                 message = f"无法解析文件 '{original_filename}' 或文件为空，已跳过。"
