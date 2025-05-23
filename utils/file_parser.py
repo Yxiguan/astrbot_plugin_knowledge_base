@@ -2,6 +2,7 @@ from typing import Optional
 from astrbot.api import logger
 import os
 import aiofiles
+import asyncio
 from markitdown import MarkItDown
 
 
@@ -57,7 +58,10 @@ class FileParser:
             # 使用 MarkItDown 处理其他支持的文件格式
             elif extension in self.markitdown_extensions:
                 try:
-                    result = self.md_converter.convert(file_path)
+                    loop = asyncio.get_running_loop()
+                    result = await loop.run_in_executor(
+                        None, self.md_converter.convert, file_path
+                    )
                     content = result.text_content
                     return content
                 except Exception as e:
