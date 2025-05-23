@@ -265,7 +265,28 @@ class KnowledgeBasePlugin(Star):
 
                 # 简单的文件类型嗅探或基于扩展名过滤
                 _, extension = os.path.splitext(filename)
-                allowed_extensions = [".txt", ".md"]  # , ".pdf", ".docx" 等
+                allowed_extensions = [
+                    ".txt",
+                    ".md",
+                    ".pdf",
+                    ".docx",
+                    ".doc",
+                    ".pptx",
+                    ".ppt",
+                    ".xlsx",
+                    ".xls",
+                    ".html",
+                    ".htm",
+                    ".json",
+                    ".xml",
+                    ".csv",
+                    ".epub",
+                    ".jpg",
+                    ".jpeg",
+                    ".png",
+                    ".mp3",
+                    ".wav",
+                ]
                 if extension.lower() not in allowed_extensions:
                     logger.error(
                         f"文件下载失败：不支持的文件类型 '{extension}'. URL: {url}"
