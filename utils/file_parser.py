@@ -4,14 +4,25 @@ import os
 import aiofiles
 import asyncio
 from markitdown import MarkItDown
-
+from openai import AsyncOpenAI, OpenAI
 
 class FileParser:
-    def __init__(self):
+    def __init__(self, llm_api_url: str, llm_api_key: str, llm_model_name: str):
         # 初始化 MarkItDown
-        self.md_converter = MarkItDown(enable_plugins=False)
+
+        self.api_key = llm_api_key
+        self.api_url = llm_api_url
+        self.model_name = llm_model_name
+        if self.api_key is None or self.api_url is None or self.model_name is None:
+            logger.warning("未配置 LLM API 密钥、基础地址和模型名称，图片解析可能失败")
+        self.async_client = AsyncOpenAI(api_key=self.api_key, base_url=self.api_url)
+        self.sync_client = OpenAI(api_key=self.api_key, base_url=self.api_url)
+
+        self.md_converter = MarkItDown(enable_plugins=True, llm_client=self.async_client, llm_model=self.model_name)
+        self.image_converter = MarkItDown(enable_plugins=True, llm_client=self.sync_client, llm_model=self.model_name)
 
         self.text_extensions = {".txt", ".md"}
+        self.image_extensions = {".jpg", ".jpeg", ".png"}
 
         # MarkItDown 支持的文件扩展名
         self.markitdown_extensions = {
@@ -28,11 +39,8 @@ class FileParser:
             ".xml",
             ".csv",
             ".epub",
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".mp3",
-            ".wav",
+            # ".mp3",
+            # ".wav",
         }
 
     async def parse_file_content(self, file_path: str) -> Optional[str]:
@@ -56,11 +64,24 @@ class FileParser:
                 return content
 
             # 使用 MarkItDown 处理其他支持的文件格式
+            elif extension in self.image_extensions:
+                try:
+                    loop = asyncio.get_running_loop()
+                    result = await loop.run_in_executor(
+                        None,
+                        lambda: self.image_converter.convert(file_path)
+                    )
+                    content = result.text_content
+                    return content
+                except Exception as e:
+                    logger.error(f"图片转换失败 {file_path}: {e}")
+                    return None
             elif extension in self.markitdown_extensions:
                 try:
                     loop = asyncio.get_running_loop()
                     result = await loop.run_in_executor(
-                        None, self.md_converter.convert, file_path
+                        None,
+                        lambda: self.md_converter.convert(file_path)
                     )
                     content = result.text_content
                     return content

@@ -139,7 +139,7 @@
 
     -   ✨ **新功能：强大的文本解析器**
         -   我们集成了先进的 [`markitdown`](https://github.com/microsoft/markitdown) 库，现在能够高效解析并处理以下多种主流文件格式：
-            ` .pdf`, ` .docx`, ` .doc`, ` .pptx`, ` .ppt`, ` .xlsx`, ` .xls`, ` .html`, ` .htm`, ` .json`, ` .xml`, ` .csv`, ` .epub`, ` .jpg`, ` .jpeg`, ` .png`, ` .mp3`, ` .wav`
+            ` .pdf`, ` .docx`, ` .doc`, ` .pptx`, ` .ppt`, ` .xlsx`, ` .xls`, ` .html`, ` .htm`, ` .json`, ` .xml`, ` .csv`, ` .epub`, ` .jpg`, ` .jpeg`, ` .png`
         -   _此项升级极大地提升了知识库的兼容性、灵活性和数据处理能力，使您可以更便捷地导入和管理各类知识源。_
         -   特别鸣谢 [@Yxiguan](https://github.com/Yxiguan) 提供的核心代码贡献！
 
