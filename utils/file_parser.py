@@ -1,5 +1,6 @@
 from typing import Optional
 from astrbot.api import logger
+from astrbot.api.star import Context
 import os
 import aiofiles
 import asyncio
@@ -7,20 +8,28 @@ from markitdown import MarkItDown
 from openai import AsyncOpenAI, OpenAI
 
 class FileParser:
-    def __init__(self, llm_api_url: str, llm_api_key: str, llm_model_name: str):
-        # 初始化 MarkItDown
+    def __init__(self, context: Context):
+        self.context = context
 
-        self.api_key = llm_api_key
-        self.api_url = llm_api_url
-        self.model_name = llm_model_name
-        if self.api_key is None or self.api_url is None or self.model_name is None:
-            logger.warning("未配置 LLM API 密钥、基础地址和模型名称，图片解析可能失败")
+        # 获取当前使用的 provider
+        provider_config = self.context.get_using_provider()
+        self.api_key = provider_config.get_current_key()  # 使用get_current_key()获取当前key
+        self.api_url = provider_config.provider_config.get("api_base") # 从provider_config获取api_base
+        self.model_name = provider_config.get_model() # 使用get_model()获取当前model
+
+        # 初始化 MarkItDown
         self.async_client = AsyncOpenAI(api_key=self.api_key, base_url=self.api_url)
         self.sync_client = OpenAI(api_key=self.api_key, base_url=self.api_url)
 
-        self.md_converter = MarkItDown(enable_plugins=True, llm_client=self.async_client, llm_model=self.model_name)
-        self.image_converter = MarkItDown(enable_plugins=True, llm_client=self.sync_client, llm_model=self.model_name)
-
+        if self.api_key is None or self.api_url is None or self.model_name is None:
+            self.md_converter = MarkItDown(enable_plugins=False)
+            self.image_converter = MarkItDown(enable_plugins=False)
+            logger.warning("未配置 LLM API 密钥、地址和模型名称，图片和复杂文档解析可能失败")
+        else:
+            self.md_converter = MarkItDown(enable_plugins=True, llm_client=self.async_client, llm_model=self.model_name)
+            self.image_converter = MarkItDown(enable_plugins=True, llm_client=self.sync_client, llm_model=self.model_name)
+            logger.info("配置LLM成功")
+            
         self.text_extensions = {".txt", ".md"}
         self.image_extensions = {".jpg", ".jpeg", ".png"}
 

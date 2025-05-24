@@ -30,23 +30,6 @@
         "type": "int",
         "default": 1024
     },
-    "llm_api_url": {
-        "description": "LLM API 基础地址",
-        "type": "string",
-        "default": "https://generativelanguage.googleapis.com/v1beta/openai/",
-        "hint": "仅OpenAI API 兼容模式有效"
-    },
-    "llm_api_key": {
-        "description": "LLM API 密钥",
-        "type": "string",
-        "default": ""
-    },
-    "llm_model_name": {
-        "description": "LLM 模型名称",
-        "type": "string",
-        "default": "gemini-2.0-flash",
-        "hint": "请选择支持识图的模型"
-    },
     "default_collection_name": {
         "description": "默认知识库集合名称",
         "type": "string",

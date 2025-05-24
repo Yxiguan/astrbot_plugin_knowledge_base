@@ -100,11 +100,7 @@ class KnowledgeBasePlugin(Star):
             )
             logger.info("文本分割工具初始化完成。")
 
-            self.file_parser = FileParser(
-                llm_api_url=self.config.get("llm_api_url"),
-                llm_api_key=self.config.get("llm_api_key"),
-                llm_model_name=self.config.get("llm_model_name"),
-            )
+            self.file_parser = FileParser(context=self.context)
             logger.info("文件解析器初始化完成。")
 
             db_type = self.config.get("vector_db_type", "faiss")
@@ -288,8 +284,8 @@ class KnowledgeBasePlugin(Star):
                     ".jpg",
                     ".jpeg",
                     ".png",
-                    ".mp3",
-                    ".wav",
+                    # ".mp3",
+                    # ".wav",
                 ]
                 if extension.lower() not in allowed_extensions:
                     logger.error(
