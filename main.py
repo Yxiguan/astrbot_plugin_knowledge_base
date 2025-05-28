@@ -240,8 +240,8 @@ class KnowledgeBasePlugin(Star):
         self,
         event: AstrMessageEvent,
         query: str,
-        collection_name: Optional[str] = None,
         top_k_str: Optional[str] = None,
+        collection_name: Optional[str] = None,
     ):
         """在知识库中搜索内容。"""
         if not await self._ensure_initialized():
