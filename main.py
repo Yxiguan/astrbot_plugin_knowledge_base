@@ -281,6 +281,19 @@ class KnowledgeBasePlugin(Star):
         ):
             yield result
 
+    @kb_group.command("clear_use")
+    async def kb_clear_use_collection(self, event: AstrMessageEvent):
+        """清除默认使用的知识库，并关闭RAG知识库补充功能"""
+        if not await self._ensure_initialized():
+            yield event.plain_result("知识库插件未初始化，请联系管理员。")
+            return
+        try:
+            await self.user_prefs_handler.clear_user_collection_pref(event)
+            yield event.plain_result("已清除默认知识库，并关闭RAG知识库补充功能。")
+        except Exception as e:
+            logger.error(f"清除默认知识库时发生错误: {e}", exc_info=True)
+            yield event.plain_result(f"清除默认知识库失败: {e}")
+
     @kb_group.command("create", alias={"创建"})
     async def kb_create_collection(self, event: AstrMessageEvent, collection_name: str):
         """创建一个新的知识库"""
@@ -384,7 +397,9 @@ class KnowledgeBasePlugin(Star):
             await manage_commands.handle_migrate_files(self, event, data_path)
             if self.vector_db:
                 await self.vector_db.initialize()
-            yield event.plain_result("迁移操作已完成。请使用/kb list命令以确认是否成功。")
+            yield event.plain_result(
+                "迁移操作已完成。请使用/kb list命令以确认是否成功。"
+            )
         except Exception as e:
             logger.error(f"迁移过程中发生错误: {e}", exc_info=True)
             yield event.plain_result(f"迁移失败: {e}")

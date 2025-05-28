@@ -5,6 +5,7 @@ from typing import Dict, AsyncGenerator, TYPE_CHECKING
 
 from astrbot.api import logger, AstrBotConfig
 from astrbot.api.event import AstrMessageEvent
+
 if TYPE_CHECKING:
     from ..vector_store.base import VectorDBBase
 
@@ -75,3 +76,12 @@ class UserPrefsHandler:
         self.user_collection_preferences[user_key] = collection_name
         await self.save_user_preferences()
         yield event.plain_result(f"当前会话默认知识库已设置为: {collection_name}")
+
+    async def clear_user_collection_pref(self, event: AstrMessageEvent) -> None:
+        """
+        清除当前会话配置的默认知识库。
+        """
+        user_key = event.unified_msg_origin
+        if user_key in self.user_collection_preferences:
+            del self.user_collection_preferences[user_key]
+            await self.save_user_preferences()
