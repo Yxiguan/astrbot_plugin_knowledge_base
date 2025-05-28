@@ -221,7 +221,8 @@ async def handle_add_file(
             )
             for chunk in chunks
         ]
-        yield event.plain_result(f"开始添加文件：{original_filename}")
+        # yield event.plain_result(f"开始添加文件：{original_filename}")
+        logger.info(f"开始添加文件：{original_filename}")
         try:
             doc_ids = await plugin.vector_db.add_documents(
                 target_collection, documents_to_add

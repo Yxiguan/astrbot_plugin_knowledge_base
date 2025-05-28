@@ -12,13 +12,14 @@ async def handle_kb_help(
 知识库插件帮助：
 /kb add text <内容> [知识库名] - 添加文本到知识库
 /kb add file <文件路径或者下载链接> [知识库名]
-/kb search <查询内容> [知识库名] [数量] - 搜索知识库
+/kb search <查询内容> [数量] [知识库名]- 搜索知识库
 /kb list - 列出所有知识库
 /kb current - 查看当前会话默认知识库
 /kb use <知识库名> - 设置当前会话默认知识库
 /kb create <知识库名> - 创建一个新的知识库
 /kb delete <知识库名> - 删除一个知识库及其内容 (危险操作!)
 /kb count [知识库名] - 查看知识库中文档数量
+/kb migrate - 迁移faiss旧的 .docs 文件到新的 .db 格式 (仅限管理员)
 /kb help - 显示此帮助信息
 """.strip()
     yield event.plain_result(help_text)

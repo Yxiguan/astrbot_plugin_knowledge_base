@@ -256,9 +256,11 @@ class MilvusStore(VectorDBBase):
                         "metric_type": self.metric_type,
                         "params": self.index_params_config,
                     },
-                    using=self.alias
+                    using=self.alias,
                 )
-                collection.create_index(field_name="embedding", index_params=index_obj.params)
+                collection.create_index(
+                    field_name="embedding", index_params=index_obj.params
+                )
                 logger.info(
                     f"为集合 '{collection_name}' 的 'embedding' 字段创建索引 {self.index_type} 成功 (通过 Index 对象)。"
                 )
@@ -627,17 +629,11 @@ class MilvusStore(VectorDBBase):
                     collection.insert, data_to_insert_for_batch
                 )
 
-                # 对于标准 Milvus，flush 很重要以确保数据对搜索可见
-                if self.kwargs.get("auto_flush_after_insert", True):
-                    logger.info(f"{log_prefix} 正在刷新集合 '{collection_name}'...")
-                    await asyncio.to_thread(collection.flush)  # flush 也是同步操作
-                    logger.info(f"{log_prefix} 集合 '{collection_name}' 刷新完成。")
-
                 # Milvus 返回的 primary_keys 是 int，转为 str
                 batch_added_ids = [str(pk) for pk in insert_result.primary_keys]
                 all_doc_ids.extend(batch_added_ids)
-                logger.info(
-                    f"{log_prefix} 成功向远程 Milvus 集合 '{collection_name}' (alias: {self.alias}) 添加了 {len(batch_added_ids)} 个文档。"
+                logger.debug(
+                    f"成功向远程 Milvus 集合 '{collection_name}' (alias: {self.alias}) 添加了 {len(batch_added_ids)} 个文档。"
                 )
 
                 processed_batches_count += 1
@@ -686,6 +682,11 @@ class MilvusStore(VectorDBBase):
                 del current_docs_in_batch  # 清理当前批次文档的引用
                 del processing_batch  # 清理批次对象的引用
 
+        # 对于标准 Milvus，flush 很重要以确保数据对搜索可见
+        if self.kwargs.get("auto_flush_after_insert", True):
+            logger.info(f"{log_prefix} 正在刷新集合 '{collection_name}'...")
+            await asyncio.to_thread(collection.flush)  # flush 也是同步操作
+            logger.info(f"{log_prefix} 集合 '{collection_name}' 刷新完成。")
         logger.info(
             f"向远程 Milvus 集合 '{collection_name}' (alias: {self.alias}) 完成添加操作。"
         )

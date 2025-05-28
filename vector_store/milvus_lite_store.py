@@ -210,7 +210,7 @@ class MilvusLiteStore(VectorDBBase):
             current_retry_count = processing_batch.retry_count
 
             log_prefix = f"[批次 ({len(current_docs_in_batch)} docs), 重试 {current_retry_count}/{MAX_RETRIES}]"
-            logger.debug(f"{log_prefix} 正在处理...")
+            # logger.debug(f"{log_prefix} 正在处理...")
 
             try:
                 current_batch_texts_to_embed = []
@@ -287,7 +287,7 @@ class MilvusLiteStore(VectorDBBase):
                 # Milvus 返回的ids是 primary key，可能是 int，转为 str
                 batch_added_ids = [str(pk) for pk in insert_result["ids"]]
                 all_doc_ids.extend(batch_added_ids)
-                logger.info(
+                logger.debug(
                     f"{log_prefix} 成功向 Milvus 集合 '{collection_name}' 添加了 {len(batch_added_ids)} 个文档。"
                 )
 
