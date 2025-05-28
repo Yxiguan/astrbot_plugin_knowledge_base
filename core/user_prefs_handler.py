@@ -5,7 +5,6 @@ from typing import Dict, AsyncGenerator, TYPE_CHECKING
 
 from astrbot.api import logger, AstrBotConfig
 from astrbot.api.event import AstrMessageEvent
-
 if TYPE_CHECKING:
     from ..vector_store.base import VectorDBBase
 
