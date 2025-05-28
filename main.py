@@ -316,9 +316,6 @@ class KnowledgeBasePlugin(Star):
             f"请在 60 秒内回复 '{confirmation_phrase}' 来执行。"
         )
 
-        # The session_waiter needs to be defined within the scope where `self` (plugin instance)
-        # and `collection_name` are accessible.
-        # The actual logic will be in manage_commands.
         @session_waiter(timeout=60, record_history_chains=False)
         async def delete_confirmation_waiter(
             controller: SessionController, confirm_event: AstrMessageEvent
@@ -369,6 +366,28 @@ class KnowledgeBasePlugin(Star):
             self, event, collection_name
         ):
             yield result
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @kb_group.command("migrate", alias={"迁移"})
+    async def kb_faiss_migrate(self, event: AstrMessageEvent):
+        """迁移旧的 .docs 文件到新的向量数据库格式"""
+        if self.config.get("vector_db_type", "faiss") != "faiss":
+            yield event.plain_result(
+                "当前配置的向量数据库类型不是 Faiss，迁移操作仅适用于 Faiss 数据库。"
+            )
+            return
+        if not await self._ensure_initialized():
+            yield event.plain_result("知识库插件未初始化，请联系管理员。")
+            return
+        try:
+            data_path = self.persistent_data_root_path
+            await manage_commands.handle_migrate_files(self, event, data_path)
+            if self.vector_db:
+                await self.vector_db.initialize()
+            yield event.plain_result("迁移操作已完成。请使用/kb list命令以确认是否成功。")
+        except Exception as e:
+            logger.error(f"迁移过程中发生错误: {e}", exc_info=True)
+            yield event.plain_result(f"迁移失败: {e}")
 
     # --- Termination ---
     async def terminate(self):

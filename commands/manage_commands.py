@@ -2,6 +2,7 @@
 from typing import Optional, TYPE_CHECKING, AsyncGenerator
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
+from ..utils.migrate_files import migrate_docs_to_db
 
 if TYPE_CHECKING:
     from ..main import KnowledgeBasePlugin
@@ -116,3 +117,12 @@ async def handle_count_documents(
             f"获取知识库 '{target_collection}' 文档数量失败: {e}", exc_info=True
         )
         yield event.plain_result(f"获取文档数量失败: {e}")
+
+
+async def handle_migrate_files(
+    plugin: "KnowledgeBasePlugin", event: AstrMessageEvent, faiss_path: str
+):
+    try:
+        migrate_docs_to_db(faiss_path)
+    except Exception as e:
+        raise Exception(f"迁移文件失败，请检查日志。{e}", exc_info=True)

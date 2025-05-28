@@ -19,6 +19,7 @@ async def handle_kb_help(
 /kb create <知识库名> - 创建一个新的知识库
 /kb delete <知识库名> - 删除一个知识库及其内容 (危险操作!)
 /kb count [知识库名] - 查看知识库中文档数量
+/kb migrate - 迁移faiss旧的 .docs 文件到新的 .db 格式 (仅限管理员)
 /kb help - 显示此帮助信息
 """.strip()
     yield event.plain_result(help_text)
