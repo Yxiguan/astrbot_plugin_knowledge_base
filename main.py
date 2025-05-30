@@ -10,19 +10,25 @@ from astrbot.core.utils.session_waiter import (
     session_waiter,
     SessionController,
 )
+from astrbot.core.config.default import VERSION
 from astrbot.api.provider import ProviderRequest
 from astrbot.api.star import StarTools
 
 
 from .core import constants
 from .utils.installation import ensure_vector_db_dependencies
-from .utils.embedding import EmbeddingUtil
+from .utils.embedding import EmbeddingUtil, EmbeddingSolutionHelper
 from .utils.text_splitter import TextSplitterUtil
 from .utils.file_parser import FileParser, LLM_Config
 from .vector_store.base import VectorDBBase
-from .vector_store.faiss_store import FaissStore
+if VERSION < "3.5.13":
+    logger.info("建议升级至 AstrBot v3.5.13 或更高版本。")
+    from .vector_store.faiss_store import FaissStore
+else:
+    from .vector_store.astrbot_faiss_store import FaissStore
 from .vector_store.milvus_lite_store import MilvusLiteStore
 from .vector_store.milvus_store import MilvusStore
+from .web_api import KnowledgeBaseWebAPI
 from .core.user_prefs_handler import UserPrefsHandler
 from .core.llm_enhancer import clean_contexts_from_kb_content, enhance_request_with_kb
 from .commands import (
@@ -47,7 +53,7 @@ class KnowledgeBasePlugin(Star):
         self._initialize_basic_paths()
 
         self.vector_db: Optional[VectorDBBase] = None
-        self.embedding_util: Optional[Union[EmbeddingUtil, Star]] = None
+        self.embedding_util: Optional[EmbeddingSolutionHelper] = None
         self.text_splitter: Optional[TextSplitterUtil] = None
         self.file_parser: Optional[FileParser] = None
         self.user_prefs_handler: Optional[UserPrefsHandler] = None
@@ -69,15 +75,27 @@ class KnowledgeBasePlugin(Star):
     async def _initialize_components(self):
         try:
             logger.info("知识库插件开始初始化...")
+            # User Preferences Handler
+            self.user_prefs_handler = UserPrefsHandler(
+                self.user_prefs_path, self.vector_db, self.config
+            )
+            await self.user_prefs_handler.load_user_preferences()
+
             # Embedding Util
             try:
                 embedding_plugin = self.context.get_registered_star(
                     "astrbot_plugin_embedding_adapter"
                 )
                 if embedding_plugin:
-                    self.embedding_util = embedding_plugin.star_cls
-                    dim = self.embedding_util.get_dim()
-                    model_name = self.embedding_util.get_model_name()
+                    embedding_util = embedding_plugin.star_cls
+                    dim = embedding_util.get_dim()
+                    model_name = embedding_util.get_model_name()
+                    self.embedding_util = EmbeddingSolutionHelper(
+                        curr_embedding_dimensions=dim,
+                        curr_embedding_util=embedding_util,
+                        context=self.context,
+                        user_prefs_handler=self.user_prefs_handler,
+                    )
                     if dim is not None and model_name is not None:
                         self.config["embedding_dimension"] = dim
                         self.config["embedding_model_name"] = model_name
@@ -87,10 +105,18 @@ class KnowledgeBasePlugin(Star):
                 self.embedding_util = None  # Fallback
 
             if self.embedding_util is None:  # If adapter failed or not found
-                self.embedding_util = EmbeddingUtil(
+                embedding_util = EmbeddingUtil(
                     api_url=self.config.get("embedding_api_url"),
                     api_key=self.config.get("embedding_api_key"),
                     model_name=self.config.get("embedding_model_name"),
+                )
+                self.embedding_util = EmbeddingSolutionHelper(
+                    curr_embedding_dimensions=self.config.get(
+                        "embedding_dimension", 1024
+                    ),
+                    curr_embedding_util=embedding_util,
+                    context=self.context,
+                    user_prefs_handler=self.user_prefs_handler,
                 )
             logger.info("Embedding 工具初始化完成。")
 
@@ -111,7 +137,6 @@ class KnowledgeBasePlugin(Star):
 
             # Vector DB
             db_type = self.config.get("vector_db_type", "faiss")
-            dimension = self.config.get("embedding_dimension", 1024)
 
             if db_type == "faiss":
                 faiss_subpath = self.config.get("faiss_db_subpath", "faiss_data")
@@ -119,7 +144,7 @@ class KnowledgeBasePlugin(Star):
                     self.persistent_data_root_path, faiss_subpath
                 )
                 self.vector_db = FaissStore(
-                    self.embedding_util, dimension, faiss_full_path
+                    self.embedding_util, faiss_full_path
                 )
             elif db_type == "milvus_lite":
                 milvus_lite_subpath = self.config.get(
@@ -130,12 +155,11 @@ class KnowledgeBasePlugin(Star):
                 )
                 os.makedirs(os.path.dirname(milvus_lite_full_path), exist_ok=True)
                 self.vector_db = MilvusLiteStore(
-                    self.embedding_util, dimension, milvus_lite_full_path
+                    self.embedding_util, milvus_lite_full_path
                 )
             elif db_type == "milvus":
                 self.vector_db = MilvusStore(
                     self.embedding_util,
-                    dimension,
                     data_path="",
                     host=self.config.get("milvus_host"),
                     port=self.config.get("milvus_port"),
@@ -150,10 +174,18 @@ class KnowledgeBasePlugin(Star):
                 await self.vector_db.initialize()
                 logger.info(f"向量数据库 '{db_type}' 初始化完成。")
 
-            self.user_prefs_handler = UserPrefsHandler(
-                self.user_prefs_path, self.vector_db, self.config
-            )
-            await self.user_prefs_handler.load_user_preferences()
+            # Web API
+            try:
+                self.web_api = KnowledgeBaseWebAPI(
+                    vec_db=self.vector_db,
+                    text_splitter=self.text_splitter,
+                    astrbot_context=self.context,
+                    llm_config=self.llm_config,
+                    user_prefs_handler=self.user_prefs_handler,
+                    plugin_config=self.config,
+                )
+            except Exception as e:
+                logger.warning(f"知识库 WebAPI 初始化失败，可能导致无法在 WebUI 操作知识库。原因：{e}", exc_info=True)
 
             logger.info("知识库插件初始化成功。")
 
@@ -301,6 +333,9 @@ class KnowledgeBasePlugin(Star):
     @kb_group.command("create", alias={"创建"})
     async def kb_create_collection(self, event: AstrMessageEvent, collection_name: str):
         """创建一个新的知识库"""
+        if VERSION >= "3.5.13":
+            yield event.plain_result("请在 WebUI 中使用知识库创建功能。")
+            return
         if not await self._ensure_initialized():
             yield event.plain_result("知识库插件未初始化，请联系管理员。")
             return

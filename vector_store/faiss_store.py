@@ -11,14 +11,25 @@ from .base import (
     MAX_RETRIES,
 )
 from astrbot.api import logger
+from ..utils.embedding import EmbeddingSolutionHelper
 import asyncio
 
 # Faiss 是同步库，通过 asyncio.to_thread 包装其操作以适应异步环境
 
 
+def _check_pickle_file(file_path: str) -> bool:
+    """检查文件是否为 Pickle 格式"""
+    try:
+        with open(file_path, "rb") as f:
+            magic = f.read(4)
+            return magic == b"\x80\x04"
+    except Exception:
+        return False
+
+
 class FaissStore(VectorDBBase):
-    def __init__(self, embedding_util, dimension: int, data_path: str):
-        super().__init__(embedding_util, dimension, data_path)
+    def __init__(self, embedding_util: EmbeddingSolutionHelper, data_path: str):
+        super().__init__(embedding_util, data_path)
         self.indexes: Dict[str, faiss.Index] = {}
         self.db: Dict[str, List[Document]] = {}  # 存储原始 Document 对象，现在命名为 db
         os.makedirs(self.data_path, exist_ok=True)
@@ -33,6 +44,12 @@ class FaissStore(VectorDBBase):
         storage_path = os.path.join(
             self.data_path, f"{collection_name}.db"
         )  # 后缀由 .docs 改为 .db
+
+        if not _check_pickle_file(storage_path):
+            logger.info(
+                f"{collection_name} 对应的存储文件 {storage_path} 不是有效的 Pickle 文件，将跳过加载。"
+            )
+            return
 
         if os.path.exists(index_path) and os.path.exists(storage_path):
             try:
@@ -76,7 +93,9 @@ class FaissStore(VectorDBBase):
             return
 
         def _create_sync():
-            self.indexes[collection_name] = faiss.IndexFlatL2(self.dimension)  # L2 距离
+            self.indexes[collection_name] = faiss.IndexFlatL2(
+                self.embedding_util.get_dimensions(collection_name)
+            )  # L2 距离
             self.db[collection_name] = []
             self._save_collection(collection_name)
             logger.info(f"Faiss 集合 '{collection_name}' 创建成功。")
@@ -144,7 +163,7 @@ class FaissStore(VectorDBBase):
                 if current_batch_texts_to_embed:
                     batch_embeddings_generated = (
                         await self.embedding_util.get_embeddings_async(
-                            current_batch_texts_to_embed
+                            current_batch_texts_to_embed, collection_name
                         )
                     )
                     logger.debug(
@@ -255,7 +274,9 @@ class FaissStore(VectorDBBase):
             logger.warning(f"Faiss 集合 '{collection_name}' 不存在。")
             return []
 
-        query_embedding = await self.embedding_util.get_embedding_async(query_text)
+        query_embedding = await self.embedding_util.get_embedding_async(
+            query_text, collection_name
+        )
         if query_embedding is None:
             logger.error("无法为查询文本生成 embedding。")
             return []
