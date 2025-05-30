@@ -43,7 +43,7 @@ from .commands import (
     constants.PLUGIN_REGISTER_NAME,
     "lxfight",
     "一个支持多种向量数据库的知识库插件",
-    "0.4.1",
+    "0.5.0",
     "https://github.com/lxfight/astrbot_plugin_knowledge_base",
 )
 class KnowledgeBasePlugin(Star):
