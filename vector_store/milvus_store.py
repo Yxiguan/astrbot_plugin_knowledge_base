@@ -810,15 +810,16 @@ class MilvusStore(VectorDBBase):
                     else:  # L2
                         similarity_score = 1.0 / (1.0 + max(0.0, float(distance)))
 
-                    entity_data = (
+                    result = (
                         hit.entity.to_dict()
                         if hasattr(hit, "entity") and hasattr(hit.entity, "to_dict")
                         else {}
                     )
+                    entity_data = result.get("entity", {})
                     text_content = entity_data.get("text_content", "")
 
                     metadata = {
-                        k: v for k, v in entity_data.items() if k != "text_content"
+                        k: v for k, v in result.items() if k != "entity"
                     }
 
                     doc = Document(
