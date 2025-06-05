@@ -21,15 +21,16 @@ from openai import AsyncOpenAI, OpenAI
 
 class LLM_Config:
     """LLM配置类"""
+
     def __init__(self, context: Context, status: bool):
         self.context = context
         self.status = status
+        provider_config = self.context.get_using_provider()
+        if provider_config is None:
+            logger.error("未在 AstrBot 配置 LLM 服务商，请检查配置")
+            self.status = False
         if self.status:
             # 获取当前使用的 provider
-            provider_config = self.context.get_using_provider()
-            if provider_config is None:
-                logger.error("未在AstrBot配置LLM服务商，请检查配置")
-                raise ValueError("未在AstrBot配置LLM服务商，请检查配置")
             self.api_key = provider_config.get_current_key()
             self.api_url = provider_config.provider_config.get("api_base")
             self.model_name = provider_config.get_model()
@@ -46,9 +47,10 @@ class LLM_Config:
             logger.info("配置LLM成功")
         else:
             self.md_converter = MarkItDown(enable_plugins=False)
-            logger.warning("未启用LLM大模型解析文件，图片和复杂文档解析可能失败")
+            logger.warning("未启用 LLM 大模型解析文件，图片和复杂文档解析可能失败")
 
     """文本文件解析类"""
+
     async def _detect_and_read_file(self, file_path: str) -> str:
         """
         检测文件编码并读取文件内容
@@ -144,13 +146,14 @@ class LLM_Config:
                 )
                 raise ValueError(f"无法读取或解码文件: {file_path}")
         return content
-        
+
     """图片解析"""
+
     def image_converter(self, base64_image: str, image_format: str) -> str:
         if not self.status:
             logger.warning("未启用LLM大模型解析文件，无法解析图片")
             return None
-        try:   
+        try:
             response = self.sync_client.chat.completions.create(
                 model=self.model_name,
                 messages=[
@@ -172,12 +175,13 @@ class LLM_Config:
                 ],
             )
             return response.choices[0].message.content
-        
+
         except Exception as e:
             logger.error(f"图片解析失败 {e}")
             return None
-        
+
     """音频解析"""
+
     def audio_converter(self, base64_audio: str, audio_format: str) -> str:
         if not self.status:
             logger.warning("未启用LLM大模型解析文件，无法解析音频")
@@ -197,7 +201,7 @@ class LLM_Config:
                                 "type": "input_audio",
                                 "input_audio": {
                                     "data": base64_audio,
-                                    "format": audio_format.lstrip('.')
+                                    "format": audio_format.lstrip("."),
                                 },
                             },
                         ],
@@ -205,15 +209,16 @@ class LLM_Config:
                 ],
             )
             return response.choices[0].message.content
-        
+
         except Exception as e:
             logger.error(f"音频解析失败 {e}")
             return None
-        
-class TextFileParser:
 
+
+class TextFileParser:
     def __init__(self, llm_config: LLM_Config):
         self._detect_and_read_file = llm_config._detect_and_read_file
+
     async def parse(self, file_path: str) -> Optional[str]:
         """
         异步读取并解析文件内容。
@@ -233,9 +238,11 @@ class TextFileParser:
         except Exception as e:
             logger.error(f"解析文本文件 {file_path} 时发生错误: {e}")
             return None
-        
+
+
 class MarkdownFileParser:
     """Markdown和复杂文本文件解析器"""
+
     def __init__(self, llm_config: LLM_Config):
         self.md_converter = llm_config.md_converter
 
@@ -251,8 +258,10 @@ class MarkdownFileParser:
             logger.error(f"MarkItDown 转换文件失败 {file_path}: {e}")
             return None
 
+
 class ImageFileParser:
     """图片文件解析器"""
+
     def __init__(self, llm_config: LLM_Config):
         self.image_converter = llm_config.image_converter
 
@@ -262,11 +271,10 @@ class ImageFileParser:
         """
         try:
             with open(file_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode('utf-8')
+                return base64.b64encode(image_file.read()).decode("utf-8")
         except Exception as e:
             logger.error(f"图片编码失败 {file_path}: {e}")
             raise
-
 
     async def parse(self, file_path: str) -> Optional[str]:
         """解析图片文件"""
@@ -279,13 +287,15 @@ class ImageFileParser:
             )
             logger.info(f"图片转换结果：{result}")
             return result
-        
+
         except Exception as e:
             logger.error(f"图片转换失败 {file_path}: {e}")
             return None
 
+
 class AudioFileParser:
     """音频文件解析器"""
+
     def __init__(self, llm_config: LLM_Config):
         self.audio_converter = llm_config.audio_converter
 
@@ -295,7 +305,7 @@ class AudioFileParser:
         """
         try:
             with open(file_path, "rb") as audio_file:
-                  return base64.b64encode(audio_file.read()).decode('utf-8')
+                return base64.b64encode(audio_file.read()).decode("utf-8")
         except Exception as e:
             logger.error(f"音频编码失败 {file_path}: {e}")
             raise
@@ -311,7 +321,7 @@ class AudioFileParser:
             )
             logger.info(f"音频转换结果：{result}")
             return result
-        
+
         except Exception as e:
             logger.error(f"音频转换失败 {file_path}: {e}")
             return None
@@ -319,6 +329,7 @@ class AudioFileParser:
 
 class FileParser:
     """文件解析器主类"""
+
     def __init__(self, llm_config: LLM_Config):
         self.text_parser = TextFileParser(llm_config)
         self.markdown_parser = MarkdownFileParser(llm_config)
